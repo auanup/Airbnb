@@ -8,8 +8,7 @@ test_users<- test_users[, ! names(test_users) %in% cols.dont.want, drop = F]
 test_users1<-na.omit(test_users)
 write.csv(test_users1,"C:/Users/akg150330/My Documents/datasets/airbnb/test_users1.csv",row.names=FALSE)
 
-install.packages("sqldf")
-library("sqldf")
+
 
 
 
