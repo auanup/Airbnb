@@ -1,0 +1,101 @@
+sessions<-read.csv("C:/Users/akg150330/My Documents/datasets/airbnb/sessions.csv")
+train_users<-read.csv("C:/Users/akg150330/My Documents/datasets/airbnb/train_users_2.csv",na.strings="")
+test_users<-read.csv("C:/Users/akg150330/My Documents/datasets/airbnb/test_users.csv",na.strings="")
+train_users1<-na.omit(train_users)
+write.csv(train_users1,"C:/Users/akg150330/My Documents/datasets/airbnb/train_users1.csv",row.names=FALSE)
+cols.dont.want <- c("date_first_booking","id","timestamp_first_active","date_account_created")
+test_users<- test_users[, ! names(test_users) %in% cols.dont.want, drop = F]
+test_users1<-na.omit(test_users)
+write.csv(test_users1,"C:/Users/akg150330/My Documents/datasets/airbnb/test_users1.csv",row.names=FALSE)
+
+install.packages("sqldf")
+library("sqldf")
+
+
+
+cols.dont.want <- c("date_first_booking","id","timestamp_first_active","date_account_created")
+train1 <- train_users1[, ! names(train_users1) %in% cols.dont.want, drop = F]
+write.csv(train1,"C:/Users/akg150330/My Documents/datasets/airbnb/train1.csv",row.names=FALSE)
+train1<-read.csv("C:/Users/akg150330/My Documents/datasets/airbnb/train1.csv")
+train2<-train1
+
+
+train3<-cbind(train2[1],train2[2:12])
+data<-colnames(train3)
+data1<-as.vector(data)
+for( i in data1)
+{
+data2<-factor(as.numeric(unlist((train2[i]))))
+train2[i]<-data2
+}
+
+write.csv(train2,"C:/Users/akg150330/My Documents/datasets/airbnb/train2.csv",row.names=FALSE)
+train2$date_account_created<-as.numeric(format(as.Date(train2$date_account_created,'%Y-%m-%d'),"%Y"))
+
+write.csv(train2,"C:/Users/akg150330/My Documents/datasets/airbnb/train2.csv",row.names=FALSE)
+
+col_train<-as.vector(colnames(train2))
+
+for( i in col_train)
+{
+data2<-as.numeric(unlist((train2[i]))) 
+train2[i]<-data2
+}
+skewness(unlist(train2[2]))
+train2[3]<-as.numeric(unlist((train2[3])))
+write.csv(train2,"C:/Users/akg150330/My Documents/datasets/airbnb/train2.csv",row.names=FALSE)
+
+
+
+
+train4<-test_users1
+train5<-cbind(train4[1],train4[3:11])
+data<-colnames(train5)
+data1<-as.vector(data)
+for( i in data1)
+{
+data2<-factor(as.numeric(unlist((train4[i])))) #unlist to convert
+train4[i]<-data2
+}
+
+write.csv(train4,"C:/Users/akg150330/My Documents/datasets/airbnb/train4.csv",row.names=FALSE)
+train4$date_account_created<-as.numeric(format(as.Date(train4$date_account_created,'%Y-%m-%d'),"%Y"))
+
+write.csv(train4,"C:/Users/akg150330/My Documents/datasets/airbnb/train4.csv",row.names=FALSE)
+
+col_train<-as.vector(colnames(train5))
+
+
+for( i in col_train)
+{
+data2<-as.numeric(unlist((train4[i]))) #unlist to convert
+train4[i]<-data2
+}
+write.csv(train4,"C:/Users/akg150330/My Documents/datasets/airbnb/train4.csv",row.names=FALSE)
+data5<-sqldf("select * from train2 where country_destination!=11") 
+data6<-sqldf("select * from train2 where country_destination=11 LIMIT 5000")
+data5<-sqldf("select * from train2 where country_destination=1 LIMIT 400") 
+data6<-sqldf("select * from train2 where country_destination=2 LIMIT 400") 
+data9<-sqldf("select * from train2 where country_destination=3 LIMIT 400") 
+data10<-sqldf("select * from train2 where country_destination=4 LIMIT 400") 
+data11<-sqldf("select * from train2 where country_destination=5 LIMIT 400") 
+data12<-sqldf("select * from train2 where country_destination=6 LIMIT 400") 
+data13<-sqldf("select * from train2 where country_destination=7 LIMIT 400") 
+data14<-sqldf("select * from train2 where country_destination=8 LIMIT 400") 
+data15<-sqldf("select * from train2 where country_destination=9 LIMIT 400") 
+data16<-sqldf("select * from train2 where country_destination=10 LIMIT 400") 
+data17<-sqldf("select * from train2 where country_destination=11 LIMIT 400")
+data7<-sqldf("select * from data5 union select * from data6 union select * from data9 union select * from data10 union select * from data11 union select * from data12 union select * from data13 union select * from data14 union select * from data15 union select * from data16 union select * from data17")
+
+data7<-sqldf("select * from data5 union select * from data6")
+write.csv(data7,"C:/Users/akg150330/My Documents/datasets/airbnb/edited.csv")
+
+BST = gbm(country_destination~gender+age+signup_method+signup_flow+language+affiliate_channel+affiliate_provider+first_affiliate_tracked+signup_app+first_device_type+first_browser,data=data7,
+         distribution='multinomial',
+         n.trees=200,
+         interaction.depth=4,
+         #cv.folds=5,
+         shrinkage=0.005)
+predBST = predict(BST,n.trees=200, newdata=train4,type='response')
+p.predBST <- apply(predBST, 1, which.max)
+head(p.predBST)
